@@ -3,6 +3,9 @@
 #include <climits>
 #include <cassert>
 #include <omp.h>
+#include <fstream>
+#include <string>
+#include <cstring>
 using namespace std;
 
 void mergesort(int* a, int* tmp, int n, int bc);
@@ -25,7 +28,7 @@ int v2[10000010];
 int main(int argc, char** argv) {
 
     // read inputs
-    if(argc != 5) {
+    if(argc != 6) {
         cout << "Usage: ./a.out seed length basecase nthreads" << endl;
         return 1;
     }
@@ -33,7 +36,15 @@ int main(int argc, char** argv) {
     int length = atoi(argv[2]);
     int bc = atoi(argv[3]);
     int nthreads = atoi(argv[4]);
+    
     omp_set_num_threads(nthreads);
+
+    fstream myfile;
+
+
+    freopen(argv[5], "w", stdout);
+    // myfile << "Writing this to a file.\n";
+    // printf("test!\n");
 
     // // allocate memory
     // int* v = new int[length]; // array to be sorted
@@ -69,7 +80,7 @@ int main(int argc, char** argv) {
     for(int i = 0; i < length; i++) {
         assert(v[i] == v2[i]);
     }
-
+    // myfile.close();
     // // report timings
     // cout << "time:   \t" << elapsed_mergeSort << '\t' << elapsed_sort << endl;
     // cout << "speedup:\t" << elapsed_sort / elapsed_mergeSort << endl;
@@ -79,7 +90,7 @@ int main(int argc, char** argv) {
     // delete [] v2;
     // delete [] t;
     // delete [] v;
-
+    
 }
 
 void mycopy(int* src, int n, int* dst, int bc) {
