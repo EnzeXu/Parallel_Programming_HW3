@@ -18,9 +18,9 @@ void mycopy(int* src, int n, int* dst, int bc);
 // int* t = new int[length]; // temporary workspace
 // int* v2 = new int[length]; // copy for checking
 
-int v[10000010];
-int t[10000010];
-int v2[10000010];
+// int v[10000010];
+// int t[10000010];
+// int v2[10000010];
 
 // int mergesort_count = 0;
 // int merge_count = 0;
@@ -28,7 +28,7 @@ int v2[10000010];
 int main(int argc, char** argv) {
 
     // read inputs
-    if(argc != 6) {
+    if(argc != 5) {
         cout << "Usage: ./a.out seed length basecase nthreads" << endl;
         return 1;
     }
@@ -39,31 +39,35 @@ int main(int argc, char** argv) {
     
     omp_set_num_threads(nthreads);
 
-    fstream myfile;
+    // fstream myfile;
 
 
-    freopen(argv[5], "w", stdout);
+    // freopen(argv[5], "w", stdout);
     // myfile << "Writing this to a file.\n";
     // printf("test!\n");
 
     // // allocate memory
-    // int* v = new int[length]; // array to be sorted
-    // int* t = new int[length]; // temporary workspace
-    // int* v2 = new int[length]; // copy for checking
+    int* v = new int[length]; // array to be sorted
+    int* t = new int[length]; // temporary workspace
+    int* v2 = new int[length]; // copy for checking
+    int* v_origin = new int[length]; // original backup
 
     // initialize input randomly
     for (int i = 0; i < length; i++) {
-        v[i] = v2[i] = rand() % length;
+        v[i] = v2[i] = v_origin[i] = rand() % length;
     }
     // sort array using STL (and time it)
     double start_sort = omp_get_wtime();
     sort(v2,v2+length);
     double elapsed_sort = omp_get_wtime() - start_sort;
 
-    printf("bc\ttime_sort\ttime\tspeedup\t\tefficiency (%)\n");
+    printf("Optimal bc in theory is %d / %d = %d\n", length, nthreads, int(length/nthreads));
+
+    printf("bc\t\ttime_sort\ttime\t\tspeedup\t\tefficiency (%)\n");
 
     // sort array using mergesort (and time it)
-    for (int i=2; i<=2; i*=2) {
+    for (int i=2; i<=16*length/nthreads; i*=2) {
+        copy(v_origin, v_origin+length, v);
         double start_mergeSort = omp_get_wtime();
         #pragma omp parallel   // [Enze]
         {
@@ -71,7 +75,7 @@ int main(int argc, char** argv) {
             mergesort(v, t, length, i);  // mergesort(v, t, length, bc);
         }
         double elapsed_mergeSort = omp_get_wtime() - start_mergeSort;
-        printf("%d\t%.4lf\t\t%.4lf\t%.4lf\t\t%.4lf\n", i, elapsed_sort, elapsed_mergeSort, elapsed_sort/elapsed_mergeSort, elapsed_sort/elapsed_mergeSort/nthreads*100.0);
+        printf("%d\t\t%.4lf\t\t%.4lf\t\t%.4lf\t\t%.4lf\n", i, elapsed_sort, elapsed_mergeSort, elapsed_sort/elapsed_mergeSort, elapsed_sort/elapsed_mergeSort/nthreads*100.0);
     }
 
     
@@ -87,9 +91,11 @@ int main(int argc, char** argv) {
 
     // printf("mergesort_count: %d\tmerge_count: %d\n", mergesort_count, merge_count);
 
-    // delete [] v2;
-    // delete [] t;
-    // delete [] v;
+    delete [] v2;
+    delete [] t;
+    delete [] v;
+
+    return 0;
     
 }
 
@@ -112,7 +118,7 @@ void mergesort(int* a, int* tmp, int n, int bc)
 {
     if(n <= bc) {
         sort(a, a+n);
-        printf("thread: %d offset: %d\n", omp_get_thread_num(), (a - v));
+        // printf("thread: %d offset: %d\n", omp_get_thread_num(), (a - v));
         // mergesort_count ++;
         return;
     }
@@ -126,18 +132,18 @@ void mergesort(int* a, int* tmp, int n, int bc)
     #pragma omp taskwait  // [Enze]
 
     // merge left and right into tmp and copy back into a (using STL)
-    #pragma omp parallel   // [Enze]
-    {
-        #pragma omp single  // [Enze]
-        recmerge(a, mid, a+mid, n-mid, tmp, bc);
-    }
+    // #pragma omp parallel   // [Enze]
+    // {
+    //     #pragma omp single  // [Enze]
+    recmerge(a, mid, a+mid, n-mid, tmp, bc);
+    // }
 
     // copy(tmp,tmp+n,a);
-    #pragma omp parallel   // [Enze]
-    {
-        #pragma omp single  // [Enze]
-        mycopy(tmp, n, a, bc);
-    }
+    // #pragma omp parallel   // [Enze]
+    // {
+    //     #pragma omp single  // [Enze]
+    mycopy(tmp, n, a, bc);
+    // }
 }
 
 // merges sorted arrays a (length n) and b (length m) into array c (length n+m),

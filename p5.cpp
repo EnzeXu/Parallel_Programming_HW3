@@ -31,30 +31,33 @@ int main(int argc, char** argv) {
     int bc = atoi(argv[3]);
     int nthreads = atoi(argv[4]);
 
-    fstream myfile;
-    myfile.open("test.txt");
-    myfile << "Writing this to a file.\n";
+    // fstream myfile;
+    // myfile.open("test.txt");
+    // myfile << "Writing this to a file.\n";
     
     // // allocate memory
     int* v = new int[length]; // array to be sorted
     int* t = new int[length]; // temporary workspace
     int* v2 = new int[length]; // copy for checking
+    int* v_origin = new int[length]; // original backup
 
     // initialize input randomly
     for (int i = 0; i < length; i++) {
-        v[i] = v2[i] = rand() % length;
+        v[i] = v2[i] = v_origin[i] = rand() % length;
     }
     // sort array using STL (and time it)
     double start_sort = omp_get_wtime();
     sort(v2,v2+length);
     double elapsed_sort = omp_get_wtime() - start_sort;
 
-    printf("num_thread\tbc\ttime_sort\ttime\tspeedup\t\tefficiency (%)\n");
+    printf("num_thread\tbc\t\ttime_sort\ttime\tspeedup\t\tefficiency (%)\n");
 
     // sort array using mergesort (and time it)
     for (int i=1; i<=44; i++) {
         omp_set_num_threads(i);
+        copy(v_origin, v_origin+length, v);
         double start_mergeSort = omp_get_wtime();
+        bc = int(length / i);
         
         #pragma omp parallel   // [Enze]
         {
@@ -83,7 +86,7 @@ int main(int argc, char** argv) {
     // cout << "speedup:\t" << elapsed_sort / elapsed_mergeSort << endl;
 
     // printf("mergesort_count: %d\tmerge_count: %d\n", mergesort_count, merge_count);
-    myfile.close();
+    // myfile.close();
 
 
     delete [] v2;
@@ -126,18 +129,18 @@ void mergesort(int* a, int* tmp, int n, int bc)
     #pragma omp taskwait  // [Enze]
 
     // merge left and right into tmp and copy back into a (using STL)
-    #pragma omp parallel   // [Enze]
-    {
-        #pragma omp single  // [Enze]
-        recmerge(a, mid, a+mid, n-mid, tmp, bc);
-    }
+    // #pragma omp parallel   // [Enze]
+    // {
+    //     #pragma omp single  // [Enze]
+    recmerge(a, mid, a+mid, n-mid, tmp, bc);
+    // }
 
     // copy(tmp,tmp+n,a);
-    #pragma omp parallel   // [Enze]
-    {
-        #pragma omp single  // [Enze]
-        mycopy(tmp, n, a, bc);
-    }
+    // #pragma omp parallel   // [Enze]
+    // {
+    //     #pragma omp single  // [Enze]
+    mycopy(tmp, n, a, bc);
+    // }
 }
 
 // merges sorted arrays a (length n) and b (length m) into array c (length n+m),
